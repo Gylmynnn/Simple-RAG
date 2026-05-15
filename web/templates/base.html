@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Evernews AI{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'eb-bg': '#141b1e',
+            'eb-bg-alt': '#1e2528',
+            'eb-surface': '#232a2d',
+            'eb-fg': '#dadada',
+            'eb-muted': '#6c7a7d',
+            'eb-red': '#e57474',
+            'eb-green': '#8ccf7e',
+            'eb-yellow': '#e5c76b',
+            'eb-blue': '#67b0e8',
+            'eb-magenta': '#c47fd5',
+            'eb-cyan': '#6cbfbf',
+          }
+        }
+      }
+    }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-eb-bg text-eb-fg antialiased" x-data="{ sidebarOpen: false }">
+    <!-- Mobile header -->
+    <header class="lg:hidden fixed top-0 inset-x-0 z-30 bg-eb-bg-alt border-b border-eb-surface h-14 flex items-center justify-between px-4">
+        <button @click="sidebarOpen = !sidebarOpen" class="text-eb-muted hover:text-eb-green p-2 -ml-2">
+            <i class="fas fa-bars text-xl"></i>
+        </button>
+        <div class="flex items-center gap-2">
+            <i class="fas fa-leaf text-eb-green text-lg"></i>
+            <span class="font-bold text-sm">Evernews AI</span>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-eb-surface flex items-center justify-center">
+            <i class="fas fa-user text-xs text-eb-muted"></i>
+        </div>
+    </header>
+
+    <!-- Sidebar overlay (mobile) -->
+    <div x-show="sidebarOpen" x-cloak class="fixed inset-0 z-20 bg-black/50 lg:hidden" @click="sidebarOpen = false"></div>
+
+    <!-- Sidebar -->
+    <aside class="fixed inset-y-0 left-0 z-30 w-56 bg-eb-bg-alt border-r border-eb-surface flex flex-col transform transition-transform duration-200 -translate-x-full lg:translate-x-0" :class="{ 'translate-x-0': sidebarOpen }">
+        <div class="h-14 flex items-center gap-3 px-4 border-b border-eb-surface shrink-0">
+            <div class="w-8 h-8 rounded-lg bg-eb-green flex items-center justify-center">
+                <i class="fas fa-leaf text-eb-bg text-sm"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold">Evernews</h1>
+                <p class="text-[10px] text-eb-muted">AI News</p>
+            </div>
+        </div>
+
+        <div class="p-3 border-b border-eb-surface shrink-0">
+            <a href="/" class="flex items-center justify-center gap-2 bg-eb-green hover:bg-eb-green/90 text-eb-bg font-semibold text-sm py-2 rounded-lg transition">
+                <i class="fas fa-plus"></i>
+                <span>New Chat</span>
+            </a>
+        </div>
+
+        <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+            <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-eb-muted hover:text-eb-green hover:bg-eb-surface transition">
+                <i class="fas fa-stream w-4"></i>
+                <span>Current Feed</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-eb-muted hover:text-eb-green hover:bg-eb-surface transition">
+                <i class="fas fa-bookmark w-4"></i>
+                <span>Saved News</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-eb-muted hover:text-eb-green hover:bg-eb-surface transition">
+                <i class="fas fa-link w-4"></i>
+                <span>Sources</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-eb-muted hover:text-eb-green hover:bg-eb-surface transition">
+                <i class="fas fa-history w-4"></i>
+                <span>History</span>
+            </a>
+        </nav>
+
+        <div class="p-3 border-t border-eb-surface space-y-1 shrink-0">
+            <button onclick="document.getElementById('settingsModal').classList.remove('hidden')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-eb-muted hover:text-eb-green hover:bg-eb-surface transition">
+                <i class="fas fa-cog w-4"></i>
+                <span>Settings</span>
+            </button>
+            <button onclick="showAbout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-eb-muted hover:text-eb-green hover:bg-eb-surface transition">
+                <i class="fas fa-circle-question w-4"></i>
+                <span>Help</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="lg:ml-56 pt-14 lg:pt-0 h-screen flex flex-col">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+        <div class="bg-eb-bg-alt rounded-xl w-full max-w-sm p-6 border border-eb-surface fade-in">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">Settings</h2>
+                <button onclick="document.getElementById('settingsModal').classList.add('hidden')" class="text-eb-muted hover:text-eb-fg"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-3">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" class="rounded accent-eb-green">
+                    <span class="text-sm">Show Context</span>
+                </label>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" class="rounded accent-eb-green" checked>
+                    <span class="text-sm">Auto Scroll</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 p-4" onclick="if(event.target===this)closeAbout()">
+        <div class="bg-eb-bg-alt rounded-xl w-full max-w-sm p-6 border border-eb-surface fade-in">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">About</h2>
+                <button onclick="closeAbout()" class="text-eb-muted hover:text-eb-fg"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="text-sm text-eb-muted mb-4">Evernews AI is a RAG-powered news intelligence system.</p>
+            <div class="text-xs text-eb-muted space-y-1">
+                <p><strong>Version:</strong> 1.0.0</p>
+                <p><strong>Status:</strong> <span class="text-eb-green">Operational</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function showAbout() { document.getElementById('aboutModal').classList.remove('hidden'); }
+    function closeAbout() { document.getElementById('aboutModal').classList.add('hidden'); }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.getElementById('settingsModal')?.classList.add('hidden');
+            document.getElementById('aboutModal')?.classList.add('hidden');
+        }
+    });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

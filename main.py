@@ -48,6 +48,27 @@ NEWS_SOURCE_HINTS = {
 
 
 def load_documents() -> list[str]:
+    """
+    Load documents from web scraping or use fallback built-in documents.
+    
+    PURPOSE / TUJUAN:
+    - EN: Loads documents from configured URLs using web scraper, or falls back to built-in sample documents if no URLs configured.
+    - ID: Memuat dokumen dari URL yang dikonfigurasi menggunakan web scraper, atau kembali ke dokumen sampel bawaan jika tidak ada URL yang dikonfigurasi.
+    
+    RETURNS / HASIL:
+    - list[str]: List of documents ready for embedding and retrieval / Daftar dokumen siap untuk embedding dan retrieval
+    
+    PROCESS / PROSES:
+    1. Check if SCRAPE_URLS is configured / Periksa apakah SCRAPE_URLS dikonfigurasi
+    2. If empty, return fallback documents / Jika kosong, kembalikan dokumen fallback
+    3. If configured, scrape URLs with expansion and link following / Jika dikonfigurasi, scrape URL dengan ekspansi dan pengikutan tautan
+    4. Convert scraped pages to chunked documents / Konversi halaman yang di-scrape ke dokumen chunked
+    5. Return scraped documents if successful, otherwise fallback / Kembalikan dokumen yang di-scrape jika berhasil, jika tidak kembali fallback
+    
+    LOGGING / PENCATATAN:
+    - Prints progress: number of pages, chunks, etc. / Mencetak kemajuan: jumlah halaman, chunk, dll.
+    - Prints fallback message if scraping fails / Mencetak pesan fallback jika scraping gagal
+    """
     if not SCRAPE_URLS:
         print("[scraper] SCRAPE_URLS kosong, pakai dokumen bawaan")
         return fallback_documents
@@ -80,6 +101,35 @@ def load_documents() -> list[str]:
 
 
 def build_context(results: list[RetrievalResult], max_per_source: int, max_chars: int) -> str:
+    """
+    Build formatted context string from retrieval results for non-news queries.
+    
+    PURPOSE / TUJUAN:
+    - EN: Formats search results into a structured context string, limiting results per source and total characters.
+    - ID: Memformat hasil pencarian menjadi string konteks terstruktur, membatasi hasil per sumber dan total karakter.
+    
+    PARAMS / PARAMETER:
+    - results (list[RetrievalResult]): Retrieved documents with scores / Dokumen yang diambil dengan skor
+    - max_per_source (int): Maximum results per unique source URL / Hasil maksimal per URL sumber unik
+    - max_chars (int): Maximum total character length of context / Panjang karakter total maksimal konteks
+    
+    RETURNS / HASIL:
+    - str: Formatted context with score information / Konteks yang diformat dengan informasi skor
+    
+    FORMAT / FORMAT:
+    [Konteks 1]
+    Skor: 0.95 (semantic=0.96, lexical=0.92)
+    {document text}
+    
+    [Konteks 2]
+    ...
+    
+    SELECTION LOGIC / LOGIKA SELEKSI:
+    1. Rank results (published date, news source, lexical score, semantic score) / Urutkan hasil
+    2. Select results respecting max_per_source limit / Pilih hasil dengan menghormati batas max_per_source
+    3. Add to context while respecting max_chars limit / Tambahkan ke konteks sambil menghormati batas max_chars
+    4. Stop if adding next result would exceed max_chars / Berhenti jika menambahkan hasil berikutnya akan melebihi max_chars
+    """
     selected: list[RetrievalResult] = []
     source_counts: dict[str, int] = {}
 
@@ -114,6 +164,31 @@ def build_context(results: list[RetrievalResult], max_per_source: int, max_chars
 
 
 def build_news_context(results: list[RetrievalResult], max_stories: int, max_chars: int) -> str:
+    """
+    Build formatted context string from retrieval results optimized for news queries.
+    
+    PURPOSE / TUJUAN:
+    - EN: Formats news articles into stories, deduplicating by source and headline, prioritizing newer/better content.
+    - ID: Memformat artikel berita menjadi cerita, mendeduplikasi berdasarkan sumber dan headline, memprioritaskan konten yang lebih baru/lebih baik.
+    
+    PARAMS / PARAMETER:
+    - results (list[RetrievalResult]): Retrieved documents / Dokumen yang diambil
+    - max_stories (int): Maximum number of distinct news stories to include / Jumlah maksimal cerita berita yang berbeda untuk disertakan
+    - max_chars (int): Maximum total character length of context / Panjang karakter total maksimal konteks
+    
+    RETURNS / HASIL:
+    - str: Formatted news context, or falls back to regular context if no news stories found / Konteks berita yang diformat, atau kembali ke konteks reguler jika tidak ada cerita berita ditemukan
+    
+    NEWS STORY IDENTIFICATION / IDENTIFIKASI CERITA BERITA:
+    - Checks if content looks like a news story (title length, source type, URL structure) / Memeriksa apakah konten terlihat seperti cerita berita
+    - Groups by story key (URL or title) / Mengelompokkan berdasarkan kunci cerita (URL atau judul)
+    - Keeps best-scoring version of each story / Menyimpan versi dengan skor terbaik dari setiap cerita
+    
+    RANKING FACTORS / FAKTOR PERINGKAT:
+    1. Has published date (more recent news first) / Memiliki tanggal publikasi (berita lebih baru terlebih dahulu)
+    2. Lexical score (keyword match) / Skor leksikal (pencocokan kata kunci)
+    3. Semantic score (relevance) / Skor semantik (relevansi)
+    """
     story_best: dict[str, RetrievalResult] = {}
 
     for result in results:
@@ -174,6 +249,31 @@ def _has_published_date(document: str) -> bool:
 
 
 def _is_news_query(query: str) -> bool:
+    """
+    Detect if query is asking for news or recent information.
+    
+    PURPOSE / TUJUAN:
+    - EN: Analyzes query text to determine if user is asking for news, breaking news, latest updates, or current events.
+    - ID: Menganalisis teks kueri untuk menentukan apakah pengguna menanyakan berita, berita terakhir, pembaruan terbaru, atau acara terkini.
+    
+    PARAMS / PARAMETER:
+    - query (str): User query string / String kueri pengguna
+    
+    RETURNS / HASIL:
+    - bool: True if query appears to be news-related, False otherwise / True jika kueri tampaknya terkait berita, False sebaliknya
+    
+    DETECTION METHODS / METODE DETEKSI:
+    1. Check for news-related keywords / Periksa kata kunci terkait berita
+       - English: "news", "latest", "today", "headline", "headlines", "breaking", "what happened"
+       - Indonesian: "berita", "terbaru", "hari ini", "update"
+    2. Check for news phrases / Periksa frasa berita
+       - "hari ini" (today)
+       - "berita terbaru" (latest news)
+    
+    EXAMPLE / CONTOH:
+    _is_news_query("Apa berita terbaru?")  # True
+    _is_news_query("Berapa suhu matahari?")  # False
+    """
     lowered = query.lower()
     tokens = [token for token in lowered.replace("?", " ").split() if token]
     if any(token in NEWS_QUERY_HINTS for token in tokens):
@@ -231,6 +331,38 @@ def _news_rank_key(result: RetrievalResult) -> tuple[bool, float, float]:
 
 
 def main() -> None:
+    """
+    Main entry point for the RAG chatbot application.
+    
+    PURPOSE / TUJUAN:
+    - EN: Initializes RAG system (loads documents, builds vector store, creates retriever) and runs interactive chat loop.
+    - ID: Menginisialisasi sistem RAG (memuat dokumen, membangun vector store, membuat retriever) dan menjalankan loop obrolan interaktif.
+    
+    WORKFLOW / ALUR KERJA:
+    1. Print configuration for debugging / Cetak konfigurasi untuk debugging
+    2. Load documents (from web or fallback) / Muat dokumen (dari web atau fallback)
+    3. Build vector store with embeddings / Bangun vector store dengan embedding
+    4. Create retriever with vector store / Buat retriever dengan vector store
+    5. Enter interactive loop / Masuk loop interaktif
+    
+    INTERACTIVE LOOP / LOOP INTERAKTIF:
+    - Read user query from stdin / Baca kueri pengguna dari stdin
+    - Exit if user types "exit" or "quit" / Keluar jika pengguna mengetik "exit" atau "quit"
+    - Retrieve relevant documents using hybrid search / Ambil dokumen relevan menggunakan pencarian hibrida
+    - Detect if query is news-related / Deteksi apakah kueri terkait berita
+    - Build context (regular or news-specific) / Bangun konteks (reguler atau spesifik berita)
+    - Generate answer using LLM with context / Hasilkan jawaban menggunakan LLM dengan konteks
+    - Display answer (optionally show retrieved context) / Tampilkan jawaban (secara opsional tunjukkan konteks yang diambil)
+    
+    CONFIGURATION / KONFIGURASI:
+    - Prints all settings at startup for transparency / Mencetak semua pengaturan saat startup untuk transparansi
+    - See config.py for all available settings / Lihat config.py untuk semua pengaturan yang tersedia
+    
+    USER INTERFACE / ANTARMUKA PENGGUNA:
+    - Prompt: ">> " / Prompt: ">> "
+    - Output: "answer: {response}" / Output: "answer: {response}"
+    - Exit message: "bye" / Pesan keluar: "bye"
+    """
     print("[config] base_url:", OPENROUTER_BASE_URL)
     print("[config] embedding_model:", EMBEDDING_MODEL)
     print("[config] chat_model:", CHAT_MODEL)
