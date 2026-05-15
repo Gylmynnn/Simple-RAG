@@ -16,7 +16,7 @@ USER_AGENT = (
     "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 )
 
-NOISE_SELECTORS = [
+NOISE_SELECTORS : list[str] = [
     "script",
     "style",
     "noscript",
@@ -131,15 +131,66 @@ BLOCKED_LINK_EXTENSIONS = (
 
 @dataclass
 class ScrapedPage:
+    """
+    Dataclass representing a scraped web page with extracted content.
+    
+    PURPOSE / TUJUAN:
+    - EN: Holds structured data about a scraped web page including URL, title, text content, and optional publication date.
+    - ID: Menyimpan data terstruktur tentang halaman web yang di-scrape termasuk URL, judul, konten teks, dan tanggal publikasi opsional.
+    """
     url: str
+    """The source URL of the scraped page / URL sumber halaman yang di-scrape"""
+    
     title: str
+    """The title/heading of the page / Judul/heading halaman"""
+    
     text: str
+    """The main text content extracted from the page / Konten teks utama yang diekstrak dari halaman"""
+    
     published_at: str | None = None
+    """Optional publication date/timestamp of the page / Tanggal publikasi/timestamp halaman opsional"""
 
 
 class ScraperService:
+    """
+    Service for scraping and extracting content from web pages.
+    
+    PURPOSE / TUJUAN:
+    - EN: Handles web scraping, HTML parsing, and text extraction to convert web pages into clean text documents.
+    - ID: Menangani web scraping, parsing HTML, dan ekstraksi teks untuk mengubah halaman web menjadi dokumen teks yang bersih.
+    
+    FEATURES / FITUR:
+    - Basic scraping of specific URLs / Scraping dasar URL spesifik
+    - Link discovery and recursive scraping / Penemuan tautan dan scraping rekursif
+    - HTML noise removal and text cleaning / Penghapusan kebisingan HTML dan pembersihan teks
+    - Text chunking with overlap for document processing / Pemberian chunk teks dengan overlap untuk pemrosesan dokumen
+    - Duplicate detection and deduplication / Deteksi duplikat dan deduplikasi
+    """
+    
     @staticmethod
     def scrape(urls: list[str], timeout_seconds: int, min_text_length: int) -> list[ScrapedPage]:
+        """
+        Scrape specified URLs without following links.
+        
+        PURPOSE / TUJUAN:
+        - EN: Simple scraping method that only scrapes the provided URLs without discovering or following links.
+        - ID: Metode scraping sederhana yang hanya mem-scrape URL yang disediakan tanpa menemukan atau mengikuti tautan.
+        
+        PARAMS / PARAMETER:
+        - urls (list[str]): List of URLs to scrape / Daftar URL untuk di-scrape
+        - timeout_seconds (int): Network timeout for each request / Batas waktu jaringan untuk setiap permintaan
+        - min_text_length (int): Minimum text length to keep a page / Panjang teks minimum untuk menyimpan halaman
+        
+        RETURNS / HASIL:
+        - list[ScrapedPage]: List of successfully scraped pages / Daftar halaman yang berhasil di-scrape
+        
+        EXAMPLE / CONTOH:
+        pages = ScraperService.scrape(
+            urls=["https://example.com"],
+            timeout_seconds=15,
+            min_text_length=250
+        )
+        """
         return ScraperService.scrape_expanded(
             urls=urls,
             timeout_seconds=timeout_seconds,
@@ -158,6 +209,33 @@ class ScraperService:
         max_links_per_url: int,
         max_total_urls: int,
     ) -> list[ScrapedPage]:
+        """
+        Advanced scraping with link discovery and recursive scraping.
+        
+        PURPOSE / TUJUAN:
+        - EN: Scrapes URLs and optionally follows links within them to expand the dataset. Uses BFS to discover and scrape related pages.
+        - ID: Mem-scrape URL dan secara opsional mengikuti tautan di dalamnya untuk memperluas dataset. Menggunakan BFS untuk menemukan dan mem-scrape halaman terkait.
+        
+        PARAMS / PARAMETER:
+        - urls (list[str]): Initial list of URLs to scrape / Daftar awal URL untuk di-scrape
+        - timeout_seconds (int): Network timeout per request / Batas waktu jaringan per permintaan
+        - min_text_length (int): Minimum text length to keep a page / Panjang teks minimum untuk menyimpan halaman
+        - follow_links (bool): Whether to discover and follow links from scraped pages / Apakah akan menemukan dan mengikuti tautan dari halaman yang di-scrape
+        - max_links_per_url (int): Maximum number of links to extract from each page / Jumlah maksimal tautan yang akan diekstrak dari setiap halaman
+        - max_total_urls (int): Maximum total URLs to scrape / Jumlah URL total maksimal untuk di-scrape
+        
+        RETURNS / HASIL:
+        - list[ScrapedPage]: List of successfully scraped pages (up to max_total_urls) / Daftar halaman yang berhasil di-scrape (hingga max_total_urls)
+        
+        RAISES / MELEMPAR:
+        - ValueError: If max_total_urls <= 0 or max_links_per_url < 0 / Jika max_total_urls <= 0 atau max_links_per_url < 0
+        
+        ALGORITHM / ALGORITMA:
+        - Uses BFS (Breadth-First Search) with a queue to manage URLs / Menggunakan BFS (Pencarian Breadth-First) dengan antrian untuk mengelola URL
+        - Identifies listing URLs (home, category, latest) for link discovery / Mengidentifikasi URL listing (home, kategori, terbaru) untuk penemuan tautan
+        - Respects max_total_urls and max_links_per_url limits / Menghormati batas max_total_urls dan max_links_per_url
+        - Filters out duplicates, invalid pages, and blocked link patterns / Menyaring duplikat, halaman tidak valid, dan pola tautan yang diblokir
+        """
         if max_total_urls <= 0:
             raise ValueError("max_total_urls harus > 0")
         if max_links_per_url < 0:
@@ -232,6 +310,37 @@ class ScraperService:
         chunk_size: int,
         chunk_overlap: int,
     ) -> list[str]:
+        """
+        Convert scraped pages into chunked documents with metadata.
+        
+        PURPOSE / TUJUAN:
+        - EN: Splits scraped pages into overlapping chunks for RAG processing, preserving metadata and deduplicating.
+        - ID: Membagi halaman yang di-scrape menjadi chunk yang tumpang tindih untuk pemrosesan RAG, melestarikan metadata dan deduplikasi.
+        
+        PARAMS / PARAMETER:
+        - pages (Iterable[ScrapedPage]): Scraped pages to process / Halaman yang di-scrape untuk diproses
+        - chunk_size (int): Target size of each text chunk in characters / Ukuran target setiap chunk teks dalam karakter
+        - chunk_overlap (int): Number of characters to overlap between chunks / Jumlah karakter untuk tumpang tindih antar chunk
+        
+        RETURNS / HASIL:
+        - list[str]: List of formatted documents with metadata headers / Daftar dokumen yang diformat dengan header metadata
+        
+        RAISES / MELEMPAR:
+        - ValueError: If chunk_size <= 0, chunk_overlap < 0, or chunk_overlap >= chunk_size / Jika chunk_size <= 0, chunk_overlap < 0, atau chunk_overlap >= chunk_size
+        
+        DOCUMENT FORMAT / FORMAT DOKUMEN:
+        Each document has metadata followed by chunk text:
+        Sumber: {url}
+        Judul: {title}
+        Terbit: {published_at}  (optional)
+        Bagian: {chunk_number}/{total_chunks}
+        
+        {chunk_text}
+        
+        EXAMPLE / CONTOH:
+        pages = [ScrapedPage(url="...", title="...", text="...")]
+        docs = ScraperService.to_documents(pages, chunk_size=800, chunk_overlap=120)
+        """
         if chunk_size <= 0:
             raise ValueError("SCRAPE_CHUNK_SIZE harus > 0")
         if chunk_overlap < 0:
@@ -278,6 +387,22 @@ class ScraperService:
 
 
 def _normalize_url(url: str) -> str:
+    """
+    Normalize and validate a URL.
+    
+    PURPOSE / TUJUAN:
+    - EN: Validates that a URL has proper HTTP(S) scheme and netloc, returns normalized URL.
+    - ID: Memvalidasi bahwa URL memiliki skema HTTP(S) dan netloc yang tepat, mengembalikan URL yang dinormalisasi.
+    
+    PARAMS / PARAMETER:
+    - url (str): Raw URL string to normalize / String URL mentah untuk dinormalisasi
+    
+    RETURNS / HASIL:
+    - str: Normalized URL / URL yang dinormalisasi
+    
+    RAISES / MELEMPAR:
+    - ValueError: If URL is invalid (missing scheme or netloc) / Jika URL tidak valid (skema atau netloc hilang)
+    """
     normalized = url.strip()
     parsed = urlparse(normalized)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
@@ -286,6 +411,31 @@ def _normalize_url(url: str) -> str:
 
 
 def _download_html(url: str, timeout_seconds: int) -> str:
+    """
+    Download and return HTML content from a URL.
+    
+    PURPOSE / TUJUAN:
+    - EN: Fetches HTML from a URL with proper User-Agent headers, validates content type, and handles encoding.
+    - ID: Mengambil HTML dari URL dengan header User-Agent yang tepat, memvalidasi tipe konten, dan menangani encoding.
+    
+    PARAMS / PARAMETER:
+    - url (str): URL to download / URL untuk diunduh
+    - timeout_seconds (int): Network timeout in seconds / Batas waktu jaringan dalam detik
+    
+    RETURNS / HASIL:
+    - str: HTML content as string / Konten HTML sebagai string
+    
+    RAISES / MELEMPAR:
+    - ValueError: If content is not HTML (wrong Content-Type) or if HTML is empty / Jika konten bukan HTML atau jika HTML kosong
+    - URLError: If network request fails / Jika permintaan jaringan gagal
+    - HTTPError: If HTTP status code indicates error / Jika kode status HTTP menunjukkan kesalahan
+    
+    FEATURES / FITUR:
+    - Sets User-Agent header to avoid blocking / Menetapkan header User-Agent untuk menghindari pemblokiran
+    - Validates Content-Type is text/html or application/xhtml+xml / Memvalidasi Content-Type adalah text/html atau application/xhtml+xml
+    - Auto-detects charset from response headers / Auto-mendeteksi charset dari header respons
+    - Falls back to UTF-8 if charset detection fails / Kembali ke UTF-8 jika deteksi charset gagal
+    """
     request = Request(
         url=url,
         headers={
@@ -309,6 +459,31 @@ def _download_html(url: str, timeout_seconds: int) -> str:
 
 
 def _parse_html(url: str, html: str) -> ScrapedPage:
+    """
+    Parse HTML content and extract clean text, title, and publication date.
+    
+    PURPOSE / TUJUAN:
+    - EN: Parses HTML using BeautifulSoup, removes noise elements, extracts main content, title, and metadata.
+    - ID: Mem-parse HTML menggunakan BeautifulSoup, menghapus elemen noise, mengekstrak konten utama, judul, dan metadata.
+    
+    PARAMS / PARAMETER:
+    - url (str): Source URL (used as fallback title) / URL sumber (digunakan sebagai judul fallback)
+    - html (str): Raw HTML content / Konten HTML mentah
+    
+    RETURNS / HASIL:
+    - ScrapedPage: Structured page data with url, title, text, published_at / Data halaman terstruktur dengan url, judul, teks, published_at
+    
+    RAISES / MELEMPAR:
+    - ValueError: If no content root found or content is empty after cleaning / Jika akar konten tidak ditemukan atau konten kosong setelah pembersihan
+    
+    PROCESSING STEPS / LANGKAH PEMROSESAN:
+    1. Remove noise elements (scripts, styles, ads, etc.) / Hapus elemen noise (script, style, iklan, dll)
+    2. Find content root (Wikipedia, main tag, article tag, body) / Temukan akar konten
+    3. Extract title from h1, page title, or h2 / Ekstrak judul dari h1, judul halaman, atau h2
+    4. Extract published date from meta tags or time elements / Ekstrak tanggal publikasi dari meta tag atau elemen waktu
+    5. Extract text blocks (paragraphs, list items) and remove inline noise / Ekstrak blok teks dan hapus kebisingan inline
+    6. Normalize and deduplicate blocks / Normalisasi dan deduplikasi blok
+    """
     soup = BeautifulSoup(html, "html.parser")
     _remove_noise_nodes(soup)
 
@@ -563,6 +738,33 @@ def _normalize_whitespace(value: str) -> str:
 
 
 def _chunk_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
+    """
+    Split text into overlapping chunks while preserving paragraph boundaries.
+    
+    PURPOSE / TUJUAN:
+    - EN: Intelligently chunks text by paragraphs first, then splits large paragraphs by sentences/words to achieve target size.
+    - ID: Secara cerdas mem-chunk teks berdasarkan paragraf terlebih dahulu, kemudian membagi paragraf besar berdasarkan kalimat/kata untuk mencapai ukuran target.
+    
+    PARAMS / PARAMETER:
+    - text (str): Text to chunk / Teks untuk di-chunk
+    - chunk_size (int): Target size of each chunk in characters / Ukuran target setiap chunk dalam karakter
+    - chunk_overlap (int): Number of characters to overlap between chunks / Jumlah karakter untuk tumpang tindih antar chunk
+    
+    RETURNS / HASIL:
+    - list[str]: List of text chunks / Daftar chunk teks
+    
+    CHUNKING STRATEGY / STRATEGI CHUNKING:
+    1. Split by double newlines (paragraph boundaries) / Pisahkan oleh double newline (batas paragraf)
+    2. For large paragraphs (> chunk_size), recursively split by sentences / Untuk paragraf besar, secara rekursif pisahkan berdasarkan kalimat
+    3. Combine paragraphs while respecting chunk_size / Gabungkan paragraf sambil menghormati chunk_size
+    4. Create overlap from end of previous chunk / Buat overlap dari akhir chunk sebelumnya
+    5. Overlap uses previous paragraphs to maintain context / Overlap menggunakan paragraf sebelumnya untuk mempertahankan konteks
+    
+    EXAMPLE / CONTOH:
+    text = "Para 1...\\n\\nPara 2...\\n\\nPara 3..."
+    chunks = _chunk_text(text, chunk_size=800, chunk_overlap=120)
+    # Returns chunks that start with context from previous chunk
+    """
     if not text:
         return []
 

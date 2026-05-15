@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Config - Evernews AI{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-y-auto p-4 lg:p-8">
+    <div class="max-w-5xl mx-auto space-y-6">
+        <div>
+            <h1 class="text-xl font-bold">Configuration</h1>
+            <p class="text-sm text-eb-muted mt-1">System settings overview</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="lg:col-span-2 bg-eb-bg-alt rounded-xl border border-eb-surface p-5">
+                <h2 class="text-sm font-bold text-eb-green mb-4 flex items-center gap-2">
+                    <i class="fas fa-server"></i> API Configuration
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-eb-surface rounded-lg p-3">
+                        <p class="text-[10px] text-eb-muted uppercase tracking-wide">Base URL</p>
+                        <p class="text-sm font-mono mt-1 break-all" id="baseUrl">-</p>
+                    </div>
+                    <div class="bg-eb-surface rounded-lg p-3">
+                        <p class="text-[10px] text-eb-muted uppercase tracking-wide">Chat Model</p>
+                        <p class="text-sm font-mono mt-1" id="chatModel">-</p>
+                    </div>
+                    <div class="bg-eb-surface rounded-lg p-3 sm:col-span-2">
+                        <p class="text-[10px] text-eb-muted uppercase tracking-wide">Embedding Model</p>
+                        <p class="text-sm font-mono mt-1 break-all" id="embeddingModel">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-eb-bg-alt rounded-xl border border-eb-surface p-5">
+                <h2 class="text-sm font-bold text-eb-cyan mb-4 flex items-center gap-2">
+                    <i class="fas fa-heartbeat"></i> System Status
+                </h2>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-eb-muted">Status</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-eb-green/10 text-eb-green" id="systemStatus">Ready</span>
+                    </div>
+                    <div class="border-t border-eb-surface pt-3">
+                        <p class="text-[10px] text-eb-muted uppercase tracking-wide">Documents Loaded</p>
+                        <p class="text-lg font-bold mt-1" id="docCount">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-eb-bg-alt rounded-xl border border-eb-surface p-5">
+            <h2 class="text-sm font-bold text-eb-yellow mb-4 flex items-center gap-2">
+                <i class="fas fa-globe"></i> Web Scraper
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Scrape URLs</p>
+                    <div class="mt-1 text-xs space-y-0.5" id="scrapeUrls"><p class="text-eb-muted">Loading...</p></div>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Follow Links</p>
+                    <p class="text-sm font-bold mt-1" id="followLinks">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Timeout</p>
+                    <p class="text-sm font-bold mt-1" id="scrapeTimeout">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Chunk Size</p>
+                    <p class="text-sm font-bold mt-1" id="chunkSize">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Chunk Overlap</p>
+                    <p class="text-sm font-bold mt-1" id="chunkOverlap">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Min Text</p>
+                    <p class="text-sm font-bold mt-1" id="minTextLength">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Max Links/URL</p>
+                    <p class="text-sm font-bold mt-1" id="maxLinksPerUrl">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Max URLs</p>
+                    <p class="text-sm font-bold mt-1" id="maxTotalUrls">-</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-eb-bg-alt rounded-xl border border-eb-surface p-5">
+            <h2 class="text-sm font-bold text-eb-blue mb-4 flex items-center gap-2">
+                <i class="fas fa-search"></i> Retriever
+            </h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Top K</p>
+                    <p class="text-sm font-bold mt-1" id="topK">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Candidate Mult</p>
+                    <p class="text-sm font-bold mt-1" id="candidateMultiplier">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Lexical Weight</p>
+                    <p class="text-sm font-bold mt-1" id="lexicalWeight">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Max Per Source</p>
+                    <p class="text-sm font-bold mt-1" id="maxPerSource">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Max Context</p>
+                    <p class="text-sm font-bold mt-1" id="maxContextChars">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">News Max</p>
+                    <p class="text-sm font-bold mt-1" id="newsMaxStories">-</p>
+                </div>
+                <div class="bg-eb-surface rounded-lg p-3">
+                    <p class="text-[10px] text-eb-muted uppercase">Show Context</p>
+                    <p class="text-sm font-bold mt-1" id="showContext">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadConfig() {
+    try {
+        var res = await fetch('/api/config');
+        var c = await res.json();
+        document.getElementById('baseUrl').textContent = c.base_url;
+        document.getElementById('chatModel').textContent = c.chat_model;
+        document.getElementById('embeddingModel').textContent = c.embedding_model;
+        document.getElementById('scrapeUrls').innerHTML = c.scrape_urls.length
+            ? c.scrape_urls.map(function(u) { return '<p class="truncate">\u2022 ' + u + '</p>'; }).join('')
+            : '<p class="text-eb-muted">None configured</p>';
+        document.getElementById('followLinks').textContent = c.scrape_follow_links ? 'Yes' : 'No';
+        document.getElementById('scrapeTimeout').textContent = c.scrape_timeout_seconds;
+        document.getElementById('chunkSize').textContent = c.scrape_chunk_size;
+        document.getElementById('chunkOverlap').textContent = c.scrape_chunk_overlap;
+        document.getElementById('minTextLength').textContent = c.scrape_min_text_length;
+        document.getElementById('maxLinksPerUrl').textContent = c.scrape_max_links_per_url;
+        document.getElementById('maxTotalUrls').textContent = c.scrape_max_total_urls;
+        document.getElementById('topK').textContent = c.retriever_top_k;
+        document.getElementById('candidateMultiplier').textContent = c.retriever_candidate_multiplier;
+        document.getElementById('lexicalWeight').textContent = c.retriever_lexical_weight != null ? c.retriever_lexical_weight.toFixed(2) : '-';
+        document.getElementById('maxPerSource').textContent = c.retriever_max_per_source;
+        document.getElementById('maxContextChars').textContent = c.max_context_chars;
+        document.getElementById('newsMaxStories').textContent = c.news_max_stories;
+        var sc = document.getElementById('showContext');
+        sc.textContent = c.show_retrieved_context ? 'Yes' : 'No';
+    } catch (e) { console.error('Config load error:', e); }
+}
+
+async function loadStatus() {
+    try {
+        var res = await fetch('/api/health');
+        var d = await res.json();
+        var el = document.getElementById('systemStatus');
+        if (d.system_ready) {
+            el.textContent = 'Ready';
+            el.className = 'text-xs px-2 py-0.5 rounded-full bg-eb-green/10 text-eb-green';
+        } else {
+            el.textContent = 'Initializing';
+            el.className = 'text-xs px-2 py-0.5 rounded-full bg-eb-yellow/10 text-eb-yellow';
+        }
+        document.getElementById('docCount').textContent = d.documents_loaded;
+    } catch (e) { console.error('Status load error:', e); }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadConfig();
+    loadStatus();
+    setInterval(loadStatus, 5000);
+});
+</script>
+{% endblock %}

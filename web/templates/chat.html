@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Chat - Evernews AI{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex flex-col" x-data="chatApp()">
+    <!-- Header -->
+    <div class="border-b border-eb-surface bg-eb-bg px-4 lg:px-8 py-3 flex items-center justify-between shrink-0">
+        <div>
+            <h2 class="text-base lg:text-lg font-bold flex items-center gap-2">
+                <i class="fas fa-comments text-eb-green"></i>
+                <span>Evernews AI</span>
+            </h2>
+            <p class="text-xs text-eb-muted mt-0.5">Latest news intelligence</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="document.getElementById('settingsModal').classList.remove('hidden')" class="text-eb-muted hover:text-eb-fg transition">
+                <i class="fas fa-cog"></i>
+            </button>
+            <div class="w-8 h-8 rounded-full bg-eb-surface flex items-center justify-center">
+                <i class="fas fa-user text-xs text-eb-muted"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto px-4 lg:px-8 py-6 space-y-4" id="messagesContainer">
+        <template x-if="messages.length === 0">
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-eb-green/10 flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-leaf text-eb-green text-xl"></i>
+                    </div>
+                    <p class="text-eb-fg font-medium">Ask me about the latest news</p>
+                    <p class="text-sm text-eb-muted mt-1">Breaking news, specific topics, or sources</p>
+                </div>
+            </div>
+        </template>
+        <template x-for="(msg, idx) in messages" :key="idx">
+            <div x-html="renderMessage(msg, idx)"></div>
+        </template>
+    </div>
+
+    <!-- Input -->
+    <div class="border-t border-eb-surface bg-eb-bg px-4 lg:px-8 py-3 shrink-0">
+        <div class="flex gap-2 max-w-4xl mx-auto">
+            <div class="flex-1 flex items-center bg-eb-bg-alt border border-eb-surface rounded-lg px-4 focus-within:border-eb-green/50 transition">
+                <input type="text" x-model="query" @keydown.enter="sendMessage()" :disabled="loading"
+                    placeholder="Ask about news, topics, or sources..."
+                    class="flex-1 bg-transparent py-2.5 text-sm text-eb-fg placeholder-eb-muted focus:outline-none">
+            </div>
+            <button @click="sendMessage()" :disabled="loading || !query.trim()"
+                class="px-4 py-2.5 bg-eb-green hover:bg-eb-green/90 text-eb-bg rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed text-sm">
+                <i x-show="!loading" class="fas fa-arrow-up"></i>
+                <i x-show="loading" class="fas fa-spinner animate-spin"></i>
+            </button>
+        </div>
+        <p class="text-[10px] text-eb-muted mt-1.5 text-center">AI can make mistakes. Verify important information.</p>
+    </div>
+</div>
+
+<!-- Context Modal -->
+<div id="contextModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 p-4" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="bg-eb-bg-alt rounded-xl w-full max-w-xl max-h-[75vh] overflow-y-auto border border-eb-surface">
+        <div class="sticky top-0 bg-eb-bg-alt border-b border-eb-surface p-4 flex justify-between items-center">
+            <h2 class="font-bold text-sm">Context & Sources</h2>
+            <button onclick="document.getElementById('contextModal').classList.add('hidden')" class="text-eb-muted hover:text-eb-fg"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-4 space-y-3 text-sm" id="contextContent"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function chatApp() {
+    return {
+        query: '',
+        messages: [],
+        loading: false,
+        resultsStore: [],
+
+        async sendMessage() {
+            if (!this.query.trim() || this.loading) return;
+            const msg = this.query.trim();
+            this.query = '';
+            this.messages.push({ type: 'user', content: msg, time: new Date() });
+            this.messages.push({ type: 'loading' });
+            this.loading = true;
+            this.$nextTick(() => this.scrollDown());
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: msg })
+                });
+                const data = await res.json();
+                this.messages.pop();
+                if (!res.ok) throw new Error(data.error || 'Request failed');
+                this.messages.push({ type: 'ai', content: data.answer, context: data.context, results: data.retrieval_results, time: new Date() });
+            } catch (e) {
+                this.messages.pop();
+                this.messages.push({ type: 'error', content: e.message, time: new Date() });
+            } finally {
+                this.loading = false;
+                this.$nextTick(() => this.scrollDown());
+            }
+        },
+
+        renderMessage(msg, idx) {
+            if (msg.type === 'user') {
+                return '<div class="flex justify-end fade-in">' +
+                    '<div class="max-w-[80%] lg:max-w-[60%] bg-eb-surface text-eb-fg rounded-lg px-4 py-2.5 text-sm message-bubble">' +
+                    '<p>' + this.esc(msg.content) + '</p></div></div>';
+            }
+            if (msg.type === 'loading') {
+                return '<div class="flex justify-start fade-in">' +
+                    '<div class="flex items-center gap-2 px-4 py-3">' +
+                    '<div class="loading-dot w-2 h-2 rounded-full bg-eb-green"></div>' +
+                    '<div class="loading-dot w-2 h-2 rounded-full bg-eb-green"></div>' +
+                    '<div class="loading-dot w-2 h-2 rounded-full bg-eb-green"></div></div></div>';
+            }
+            if (msg.type === 'error') {
+                return '<div class="flex justify-start fade-in">' +
+                    '<div class="max-w-[80%] lg:max-w-[60%] bg-eb-red/10 text-eb-red border border-eb-red/20 rounded-lg px-4 py-2.5 text-sm message-bubble">' +
+                    '<p>' + this.esc(msg.content) + '</p></div></div>';
+            }
+            if (msg.type === 'ai') {
+                var resultsId = '';
+                var sourceBtn = '';
+                if (msg.results && msg.results.length > 0) {
+                    resultsId = 'r' + Date.now() + '_' + idx;
+                    this.resultsStore.push({ id: resultsId, results: msg.results, context: msg.context });
+                    var storeIdx = this.resultsStore.length - 1;
+                    sourceBtn = '<button onclick="window.openContext(' + storeIdx + ')" class="mt-2 text-xs text-eb-green hover:text-eb-green/80 flex items-center gap-1 transition">' +
+                        '<i class="fas fa-file-alt"></i> <span>' + msg.results.length + ' source' + (msg.results.length > 1 ? 's' : '') + '</span></button>';
+                }
+                return '<div class="flex justify-start fade-in">' +
+                    '<div class="max-w-[80%] lg:max-w-[65%] bg-eb-bg-alt border border-eb-surface rounded-lg px-4 py-2.5 text-sm message-bubble">' +
+                    '<div class="prose-custom">' + msg.content.replace(/\n/g, '<br>') + '</div>' + sourceBtn + '</div></div>';
+            }
+            return '';
+        },
+
+        esc(text) {
+            var d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        },
+
+        scrollDown() {
+            var c = document.getElementById('messagesContainer');
+            if (c) setTimeout(function() { c.scrollTop = c.scrollHeight; }, 50);
+        }
+    };
+}
+
+window.openContext = function(idx) {
+    var store = document.querySelector('[x-data]').__x.$data.resultsStore;
+    var item = store[idx];
+    if (!item) return;
+    var modal = document.getElementById('contextModal');
+    var content = document.getElementById('contextContent');
+    content.innerHTML = item.results.map(function(r, i) {
+        var src = r.source_url ? '<a href="' + r.source_url + '" target="_blank" class="text-[10px] text-eb-blue hover:underline truncate block mt-1">' + r.source_url + '</a>' : '';
+        return '<div class="bg-eb-surface rounded-lg p-3 border border-eb-surface">' +
+            '<div class="flex justify-between items-start mb-1">' +
+            '<span class="font-medium text-xs text-eb-fg">Source ' + (i + 1) + '</span>' +
+            '<span class="text-[10px] text-eb-muted">' + (r.score * 100).toFixed(0) + '%</span></div>' +
+            '<p class="text-xs text-eb-muted">' + (r.document || '') + '</p>' + src + '</div>';
+    }).join('');
+    modal.classList.remove('hidden');
+};
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') document.getElementById('contextModal')?.classList.add('hidden');
+});
+</script>
+{% endblock %}

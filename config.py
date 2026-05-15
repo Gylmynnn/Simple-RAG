@@ -7,6 +7,23 @@ load_dotenv()
 
 
 def _parse_int_env(name: str, default: int) -> int:
+    """
+    Parse an environment variable as an integer with a default fallback.
+    
+    PURPOSE / TUJUAN:
+    - EN: Safely converts an environment variable to an integer value, returning a default value if not set or empty.
+    - ID: Mengubah variabel lingkungan menjadi nilai integer dengan aman, mengembalikan nilai default jika tidak diatur atau kosong.
+    
+    PARAMS / PARAMETER:
+    - name (str): The environment variable name / Nama variabel lingkungan
+    - default (int): Default value if env var is not set or empty / Nilai default jika env var tidak diatur atau kosong
+    
+    RETURNS / HASIL:
+    - int: Parsed integer value or default / Nilai integer yang diparse atau nilai default
+    
+    RAISES / MELEMPAR:
+    - RuntimeError: If the value cannot be converted to integer / Jika nilai tidak dapat dikonversi ke integer
+    """
     raw_value = os.getenv(name)
     if raw_value is None or raw_value.strip() == "":
         return default
@@ -18,6 +35,23 @@ def _parse_int_env(name: str, default: int) -> int:
 
 
 def _parse_float_env(name: str, default: float) -> float:
+    """
+    Parse an environment variable as a float with a default fallback.
+    
+    PURPOSE / TUJUAN:
+    - EN: Safely converts an environment variable to a float value, returning a default value if not set or empty.
+    - ID: Mengubah variabel lingkungan menjadi nilai float dengan aman, mengembalikan nilai default jika tidak diatur atau kosong.
+    
+    PARAMS / PARAMETER:
+    - name (str): The environment variable name / Nama variabel lingkungan
+    - default (float): Default value if env var is not set or empty / Nilai default jika env var tidak diatur atau kosong
+    
+    RETURNS / HASIL:
+    - float: Parsed float value or default / Nilai float yang diparse atau nilai default
+    
+    RAISES / MELEMPAR:
+    - RuntimeError: If the value cannot be converted to float / Jika nilai tidak dapat dikonversi ke float
+    """
     raw_value = os.getenv(name)
     if raw_value is None or raw_value.strip() == "":
         return default
@@ -29,11 +63,48 @@ def _parse_float_env(name: str, default: float) -> float:
 
 
 def _parse_list_env(name: str) -> list[str]:
+    """
+    Parse an environment variable as a comma-separated list of strings.
+    
+    PURPOSE / TUJUAN:
+    - EN: Converts an environment variable containing comma-separated values into a list, trimming whitespace.
+    - ID: Mengubah variabel lingkungan yang berisi nilai terpisah koma menjadi daftar, memotong whitespace.
+    
+    PARAMS / PARAMETER:
+    - name (str): The environment variable name / Nama variabel lingkungan
+    
+    RETURNS / HASIL:
+    - list[str]: List of trimmed strings, empty if env var is not set / Daftar string yang dipotong, kosong jika env var tidak diatur
+    
+    EXAMPLE / CONTOH:
+    - If SCRAPE_URLS="http://a.com, http://b.com" returns ["http://a.com", "http://b.com"]
+    """
     raw_value = os.getenv(name, "")
     return [item.strip() for item in raw_value.split(",") if item.strip()]
 
 
 def _parse_bool_env(name: str, default: bool) -> bool:
+    """
+    Parse an environment variable as a boolean with a default fallback.
+    
+    PURPOSE / TUJUAN:
+    - EN: Safely converts an environment variable to a boolean value, accepting various true/false representations.
+    - ID: Mengubah variabel lingkungan menjadi nilai boolean, menerima berbagai representasi benar/salah.
+    
+    PARAMS / PARAMETER:
+    - name (str): The environment variable name / Nama variabel lingkungan
+    - default (bool): Default value if env var is not set or empty / Nilai default jika env var tidak diatur atau kosong
+    
+    RETURNS / HASIL:
+    - bool: Parsed boolean value or default / Nilai boolean yang diparse atau nilai default
+    
+    ACCEPTED VALUES / NILAI YANG DITERIMA:
+    - True: "1", "true", "yes", "y", "on"
+    - False: "0", "false", "no", "n", "off"
+    
+    RAISES / MELEMPAR:
+    - RuntimeError: If the value doesn't match any accepted boolean pattern / Jika nilai tidak cocok dengan pola boolean apa pun
+    """
     raw_value = os.getenv(name)
     if raw_value is None or raw_value.strip() == "":
         return default

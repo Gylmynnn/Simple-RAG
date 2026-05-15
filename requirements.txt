@@ -1,0 +1,14 @@
+# Core RAG Dependencies
+beautifulsoup4>=4.14.3
+numpy>=2.4.3
+openai>=2.29.0
+python-dotenv>=1.1.1
+scikit-learn>=1.8.0
+
+# Web Framework
+Flask>=2.3.0
+Flask-CORS>=4.0.0
+Werkzeug>=2.3.0
+
+# Additional Utilities
+requests>=2.31.0
